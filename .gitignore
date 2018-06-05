@@ -10,3 +10,7 @@ buildNumber.properties
 .idea/*
 *.iml
 
+.vertx/
+db/
+file-uploads/
+src/main/generated/
