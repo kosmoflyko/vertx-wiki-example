@@ -47,6 +47,7 @@ public class SomeTests {
     vertx.setPeriodic(100, n -> a2.countDown());
   }
 
+  @Test
   public void crud_operations(TestContext context) {
     Async async = context.async();
 
