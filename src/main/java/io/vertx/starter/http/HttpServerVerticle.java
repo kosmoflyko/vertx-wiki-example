@@ -7,6 +7,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -174,8 +175,8 @@ public class HttpServerVerticle extends AbstractVerticle {
     dbService.fetchAllPageData(reply -> {
       if(reply.succeeded()) {
 
-        JsonObject filesObject = new JsonObject();
-        JsonObject gistPayload = new JsonObject()
+        JsonArray filesObject = new JsonArray();
+        JsonObject payload = new JsonObject()
           .put("files", filesObject)
           .put("description", "A wiki backup")
           .put("public", true);
@@ -184,19 +185,20 @@ public class HttpServerVerticle extends AbstractVerticle {
           .result()
           .forEach(page -> {
             JsonObject fileObject = new JsonObject();
-            filesObject.put(page.getString("NAME"), fileObject);
+            fileObject.put("name", page.getString("NAME"));
             fileObject.put("content", page.getString("CONTENT"));
+            filesObject.add(fileObject);
           });
 
-        webClient.post(443, "api.github.com", "/gists")
-          .putHeader("Accept", "application/vnd.github.v3+json")
+        webClient.post(443, "snippets.glot.io", "/snippets")
           .putHeader("Content-Type", "application/json")
           .as(BodyCodec.jsonObject())
-          .sendJsonObject(gistPayload, ar -> {
+          .sendJsonObject(payload, ar -> {
             if(ar.succeeded()) {
               HttpResponse<JsonObject> response = ar.result();
-              if (response.statusCode() == 201) {
-                context.put("backup_gist_url", response.body().getString("html_url"));
+              if (response.statusCode() == 200) {
+                String url = "http://glot.io/snippets/" + response.body().getString("id");
+                context.put("backup_gist_url", url);
                 indexHandler(context);
               } else {
                 StringBuilder message = new StringBuilder()
